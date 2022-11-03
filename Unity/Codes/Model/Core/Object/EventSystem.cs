@@ -75,11 +75,18 @@ namespace ET
         //所有加入的程序集里面的所有类，tmd 打印出来有7w个  不过很多是无用的类 
         private readonly Dictionary<string, Type> allTypes = new Dictionary<string, Type>();
 
-        //从allTypes中过滤出  继承自 BaseAttribute 的所有子类  对应的 被该子类标记的类型列表
+        //从allTypes中过滤出  继承自 BaseAttribute 的所有子类  对应的 被该子类特性标记的类型列表 (以下为继承Base特性的所有子类特性
+        //UIEvent, Event, ObjectSystem, Timer, AIHandler, ActorMessageHandler, ConsoleHandler, Message, MessageHandler, ResponseType, SessionStreamDispatcher, NumericWatcher, RobotCase, HttpHandler
         private readonly UnOrderMultiMap<Type, Type> types = new UnOrderMultiMap<Type, Type>();
 
+        //被Event标记的, 且最上层接口为IEvent的类型
         private readonly Dictionary<Type, List<object>> allEvents = new Dictionary<Type, List<object>>();
 
+        
+        //实现ISystemType的 子接口如下:
+        //
+        //过滤被 ObjectSystem 标记的类 且最上层接口为 ISystemType 的类型, key为 事件类传入参数 , value为 所有事件类的参数跟key一样的事件类实例
+        //key包含了entity组件类    因为组件也被作为了类参数T 
         private TypeSystems typeSystems = new TypeSystems();
 
         private Queue<long> updates = new Queue<long>();
@@ -155,20 +162,30 @@ namespace ET
                 object obj = Activator.CreateInstance(type);
 
                 //进一步过滤出 实现 ISystemType接口的类型
-                //其实就是模拟的生命周期类  AwakeSystem, UpdateSystem, LateUpdateSystem, DestroySystem, LoadSystem,AddComponentSystem ,GetComponentSystem
+                //其实就是模拟的生命周期类  因为实现ISystemType接口的类型有:
+                //AwakeSystem, UpdateSystem, LateUpdateSystem, LoadSystem, AddComponentSystem, GetComponentSystem, DeserializeSystem, DestroySystem,
+                //实现ISystemType接口的接口有:
+                //IAwakeSystem, IUpdateSystem, ILateUpdateSystem, ILoadSystem, IAddComponentSystem, IGetComponentSystem, IDeserializeSystem, IDestroySystem,
                 if (obj is ISystemType iSystemType)
                 {
                     //将生命周期类型加入 typeSystems 并返回创建初始化的空字典列表
                     OneTypeSystems oneTypeSystems = this.typeSystems.GetOrCreateOneTypeSystems(iSystemType.Type());
-                    //<生命周期类型, <生命周期的SystemType,即接口类型,<对应的事件实例>>  >
-                    //例如， 
+                    //<实现IAwak之类接口的生命周期类型, <实现IAwak之类接口的生命周期类型的父类所实现的接口类型 ,<对应的事件实例>>  >
                     oneTypeSystems.Add(iSystemType.SystemType(), obj);
-                    //
+                    
+                    //例如,
                     //public abstract class AwakeSystem<T> : IAwakeSystem where T: IAwake
                     
                     // public class ConfigComponent_SetConfigLoader_Awake: AwakeSystem<ConfigComponent>
+                    // public class ConfigAwakeSystem : AwakeSystem<ConfigComponent>
+                    //可以看到上面两个类传入的参数都是 ConfigComponent 
+                    //那么 他们的key都是 typeof(ConfigComponent)  而且二级key都是AwakeSystem<ConfigComponent>  二级key对应的列表存了两个值
+                    //即：ConfigComponent_SetConfigLoader_Awake,   ConfigAwakeSystem
+                    //继承结构  实际生命周期类 : 生命周期类<参数类型> : 生命周期接口<参数类型> : ISystemType
                     
-                    //< typeof(T), < typeof(IAwakeSystem),< 所有继承AwakeSystem的类型> > >
+                    //typeSystems 字典结构
+                    //< typeof(T), < typeof(IAwakeSystem),< 所有继承AwakeSystem<T>的实际类型> > >
+                    //< 参数类型, < 生命周期接口类型, < 所有继承生命周期类<T>的实际类型 > > >
                 }
             }
 
@@ -178,6 +195,7 @@ namespace ET
                 IEvent iEvent = Activator.CreateInstance(type) as IEvent;
                 if (iEvent != null)
                 {
+                    //获取的是事件类传入的参数的类型
                     Type eventType = iEvent.GetEventType();
                     if (!this.allEvents.ContainsKey(eventType))
                     {
@@ -233,6 +251,7 @@ namespace ET
 
             Type type = component.GetType();
 
+            //找到之前添加过的组件类 所对应的生命周期类
             OneTypeSystems oneTypeSystems = this.typeSystems.GetOneTypeSystems(type);;
             if (component is ILoad)
             {
