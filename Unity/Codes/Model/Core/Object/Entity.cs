@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Runtime.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 
@@ -18,8 +19,8 @@ namespace ET
 
     public partial class Entity: DisposeObject
     {
-        [IgnoreDataMember]
-        [BsonIgnore]
+        [IgnoreDataMember]      //c# 序列化时忽略该字段
+        [BsonIgnore]            //bson 序列化时忽略该字段
         public long InstanceId
         {
             get;
@@ -277,7 +278,7 @@ namespace ET
                         {
                             component.IsComponent = true;
                             this.Components.Add(component.GetType(), component);
-                            component.parent = this;
+                            component.parent = this;  //说明children 和  component 都是挂在当前entity上面的作为叶子
                         }
 #else
                         this.componentsDB.Foreach((component =>
@@ -347,7 +348,7 @@ namespace ET
 		[IgnoreDataMember]
         [BsonElement("Children")]
         [BsonIgnoreIfNull]
-        private HashSet<Entity> childrenDB;
+        private HashSet<Entity> childrenDB;  //后缀为DB 要求实现这个接口的 ISerializeToEntity   说明可以反序列化 Deserialized
 
         [IgnoreDataMember]
         [BsonIgnore]
@@ -535,7 +536,7 @@ namespace ET
 
             this.parent = null;
 
-            base.Dispose();
+            base.Dispose(); //父类没有实现 所以这一行没必要
             
             if (this.IsFromPool)
             {
