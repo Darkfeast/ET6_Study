@@ -88,10 +88,9 @@ namespace ET
 		
 		public static void WriteTo(this byte[] bytes, int offset, ushort num)
 		{
-			bytes[offset] = (byte)(num & 0xff);
-			// bytes[offset] = (byte) num; //跟这个有啥区别	没区别
-			
-			bytes[offset + 1] = (byte)((num & 0xff00) >> 8);//这个写法 跟上面的有啥区别 没区别
+			//ushort 为 int16
+			bytes[offset] = (byte)(num & 0xff);   //低八位
+			bytes[offset + 1] = (byte)((num & 0xff00) >> 8);  //高八位   
 		}
 		
 		public static unsafe void WriteTo(this byte[] bytes, int offset, long num)

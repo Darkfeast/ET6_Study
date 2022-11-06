@@ -13,9 +13,9 @@ namespace ET
         public long ToLong()
         {
             ulong result = 0;
-            result |= this.Value;
-            result |= (ulong) this.Process << 16;
-            result |= (ulong) this.Time << 34;
+            result |= this.Value;                   //将value 放在0-15位
+            result |= (ulong) this.Process << 16;   //将process 放在16-48  另外option的值只被赋值过一次  值为1, 即 000...0001
+            result |= (ulong) this.Time << 34;      //将time放在34-64  这样 process的34-48位就被覆盖掉了(且都为0)  process有效位只有16-33 即18位
             return (long) result;
         }
 
@@ -141,7 +141,7 @@ namespace ET
 
     public class IdGenerater: IDisposable
     {
-        public const int Mask18bit = 0x03ffff;
+        public const int Mask18bit = 0x03ffff; //二进制 18个1
         public static IdGenerater Instance = new IdGenerater();
 
         public const int MaxZone = 1024;
@@ -234,18 +234,20 @@ namespace ET
         {
             uint time = TimeSince2020();
 
-            if (time > this.lastIdTime)
+            if (time > this.lastIdTime)  //如果时间到了下一毫秒  就把id重制为0
             {
                 this.lastIdTime = time;
                 this.value = 0;
             }
-            else
+            else                        //如果时间还是当前的毫秒数， 就把id加一  也就是说当时间相同时，最大支持 ushort.MaxValue 个id  即 0- ushort.MaxValue-1  
             {
                 ++this.value;
                 
-                if (value > ushort.MaxValue - 1)
-                {
-                    this.value = 0;
+                // 大于最大值-1  就是大于最大值  value是int16 最大值就是ushort.MaxValue
+                //所以 value > ushort.MaxValue - 1 时  value只能有一种情况就是达到了最大值
+                if (value > ushort.MaxValue - 1) //二进制 16个1  //达到最大id上限时
+                {// value最大能达到 ushort.MaxValue - 1   所以范围 为 0 到 ushort.MaxValue - 1  共 ushort.MaxValue 个值
+                    this.value = 0;    //id数重置，进入下一秒
                     ++this.lastIdTime; // 借用下一秒
                     Log.Error($"id count per sec overflow: {time} {this.lastIdTime}");
                 }

@@ -3,6 +3,9 @@ using System.Collections.Generic;
 
 namespace ET
 {
+    /// <summary>
+    /// Entity的对象池
+    /// </summary>
     public class ObjectPool: IDisposable
     {
         private readonly Dictionary<Type, Queue<Entity>> pool = new Dictionary<Type, Queue<Entity>>();

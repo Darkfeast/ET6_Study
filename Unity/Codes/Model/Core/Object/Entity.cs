@@ -13,8 +13,8 @@ namespace ET
         IsFromPool = 1,
         IsRegister = 1 << 1,
         IsComponent = 1 << 2,
-        IsCreated = 1 << 3,
-        IsNew = 1 << 4,
+        IsCreated = 1 << 3,     //通过Create方法创建的 通过 Activator.CreateInstance 或  ObjectPool 对象池  生成的
+        IsNew = 1 << 4,         //通过Create方法创建的 跟 IsCreate赋值的地方一样
     }
 
     public partial class Entity: DisposeObject
@@ -650,7 +650,7 @@ namespace ET
             }
 
             Type type = component.GetType();
-            Entity c = this.GetComponent(component.GetType());
+            Entity c = this.GetComponent(type); //移除组件时 会触发GetComp事件
             if (c == null)
             {
                 return;
@@ -672,7 +672,7 @@ namespace ET
                 return;
             }
 
-            Entity c = this.GetComponent(type);
+            Entity c = this.GetComponent(type); //先查找是否存在这个类型的entity   //移除组件时 会触发GetComp事件
             if (c == null)
             {
                 return;
@@ -744,6 +744,9 @@ namespace ET
             return component;
         }
 
+        
+        //给当前entity添加一个组件 并挂在当前entity下面
+        //添加组件时 会触发AddComp事件
         public Entity AddComponent(Entity component)
         {
             Type type = component.GetType();
@@ -753,7 +756,7 @@ namespace ET
             }
 
             component.ComponentParent = this;
-
+  
             if (this is IAddComponent)
             {
                 EventSystem.Instance.AddComponent(this, component);
@@ -769,9 +772,9 @@ namespace ET
             }
 
             Entity component = Create(type, isFromPool);
-            component.Id = this.Id;
+            component.Id = this.Id; //把当前entity的id赋给叶子节点  为啥
             component.ComponentParent = this;
-            EventSystem.Instance.Awake(component);
+            EventSystem.Instance.Awake(component);  //添加新组件的时候 同时会触发Awake 和 AddComp事件
             
             if (this is IAddComponent)
             {

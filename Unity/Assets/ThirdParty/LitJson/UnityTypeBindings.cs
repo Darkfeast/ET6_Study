@@ -20,7 +20,6 @@ namespace LitJson
         public static void Register()
         {
             // 注册Type类型的Exporter
-            Debug.Log("RRR json");  
              
             JsonMapper.RegisterExporter<Type>((v, w) =>
             {

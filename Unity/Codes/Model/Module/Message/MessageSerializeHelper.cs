@@ -83,6 +83,7 @@ namespace ET
             MessageSerializeHelper.SerializeTo(opcode, message, stream);
             
             stream.Seek(0, SeekOrigin.Begin);
+
             return (opcode, stream);
         }
     }
