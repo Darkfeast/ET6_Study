@@ -98,10 +98,16 @@ namespace ET
 
         private static void BuildMuteAssembly(string assemblyName, string[] CodeDirectorys, string[] additionalReferences, CodeOptimization codeOptimization)
         {
+            DirectoryInfo dt = new DirectoryInfo("."); //dt    D:\Darkfeast\GitDF\ET6_Study\Unity
+            Debug.Log($"dt    {dt.FullName}");
+            
             List<string> scripts = new List<string>();
             for (int i = 0; i < CodeDirectorys.Length; i++)
             {
                 DirectoryInfo dti = new DirectoryInfo(CodeDirectorys[i]);
+                
+                // Debug.Log($"dir {dti.FullName}");
+                
                 FileInfo[] fileInfos = dti.GetFiles("*.cs", System.IO.SearchOption.AllDirectories);
                 for (int j = 0; j < fileInfos.Length; j++)
                 {
